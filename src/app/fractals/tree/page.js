@@ -1,4 +1,6 @@
-import FractalTreeSim from '@/components/fractals/FractalTreeSim';
+import dynamic from 'next/dynamic';
+
+const FractalTreeSim = dynamic(() => import('@/components/fractals/FractalTreeSim'), { ssr: false });
 
 export default function Page() {
   return <FractalTreeSim showSettings={true} />;

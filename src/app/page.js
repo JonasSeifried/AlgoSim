@@ -1,7 +1,8 @@
 import dynamic from 'next/dynamic';
 
 const BoidsSim = dynamic(() => import('@/components/BoidsSim'), { ssr: false });
-const sims = [<BoidsSim key="boids" showSettings={false} />];
+const FractalTreeSim = dynamic(() => import('@/components/fractals/FractalTreeSim'), { ssr: false });
+const sims = [<BoidsSim key="boids" showSettings={false} />, <FractalTreeSim key="fractal" showSettings={false} />];
 
 export default function Home() {
   const randomSim = sims[Math.floor(Math.random() * sims.length)];
