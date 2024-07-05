@@ -10,6 +10,8 @@ export default function fractalTreeSketch(p, args) {
   let branchLengthCache = {};
   let maxDepth;
   let currentMaxDepth = 0;
+  let freezeAnimation = false;
+  let lastAnimationDepth = 0;
   const maxLength = 500;
 
   const [speedSlider, speedSliderLabel] = createSliderWithLabel('speed', 0, 20, 20, 1, 20, 10);
@@ -98,6 +100,8 @@ export default function fractalTreeSketch(p, args) {
         if (args[`branch${i}`] && args[`branch${i}`].scale) branches[i].scaleSlider.value(args[`branch${i}`].scale);
       }
     }
+
+    p.frameRate(60);
     p.createCanvas(parentDiv.clientWidth, parentDiv.clientHeight);
     maxDepth = depthSlider.value();
     depthSlider.input(() => {
@@ -107,27 +111,30 @@ export default function fractalTreeSketch(p, args) {
   };
 
   p.draw = () => {
+    if (p.frameCount % (p.getTargetFrameRate() / speedSlider.value()) === 0) currentMaxDepth++;
+
+    if (freezeAnimation) return;
+    if (currentMaxDepth === lastAnimationDepth) return;
     p.clear();
     p.translate(p.width / 2, p.height);
     p.angleMode(p.DEGREES);
     p.strokeWeight(10);
     branch(lengthSlider.value(), 0);
+    lastAnimationDepth = currentMaxDepth;
 
     if (currentMaxDepth >= depthSlider.value()) {
       if (loopCheckbox.checked()) {
         if (args && args.waitOnCompletion) {
-          p.noLoop();
+          freezeAnimation = true;
           setTimeout(() => {
             currentMaxDepth = 0;
-            p.loop();
+            freezeAnimation = false;
           }, args.waitOnCompletion * 1000);
           return;
         }
         currentMaxDepth = 0;
       }
-      return;
     }
-    if (p.frameCount % (p.getTargetFrameRate() / speedSlider.value()) === 0) currentMaxDepth++;
   };
 
   p.windowResized = () => {
@@ -149,7 +156,7 @@ export default function fractalTreeSketch(p, args) {
 
     const newLength = branchLengthCache[len][depth];
     const newDepth = depth + 1;
-    const opacity = p.map(depth - 1, 0, maxDepth, 255, 0);
+    //const opacity = p.map(depth - 1, 0, maxDepth, 255, 0);
     const branchData = branches.map((b) => ({
       angle: b.angleSlider.value(),
       scale: b.scaleSlider.value(),
@@ -158,7 +165,6 @@ export default function fractalTreeSketch(p, args) {
     for (let b of branchData) {
       p.push();
       p.rotate(b.angle);
-
       branch(newLength * b.scale, newDepth);
       p.pop();
     }

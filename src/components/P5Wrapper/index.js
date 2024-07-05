@@ -13,7 +13,7 @@ const P5Wrapper = ({ sketch, args }) => {
       p5Instance.args = args;
       p5Instance.setup();
     };
-
+    
     return () => {
       p5Instance.remove();
     };
