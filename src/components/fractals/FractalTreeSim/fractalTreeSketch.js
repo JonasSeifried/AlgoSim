@@ -9,16 +9,17 @@ export default function fractalTreeSketch(p, args) {
 
   const branchLengthCache = {};
   const strokeWeightCache = {};
-  let maxDepth;
+  let treeStack = {}
   let currentMaxDepth = 0;
   let freezeAnimation = false;
   let lastAnimationDepth = 0;
   let settingsChanged = true;
   const maxLength = 500;
+  const maxDepth = 15;
 
   const [speedSlider, speedSliderLabel] = createSliderWithLabel('speed', 0, 20, 20, 1, 20, 10);
   const [lengthSlider, lengthSliderLabel] = createSliderWithLabel('length', 0, maxLength, 350, 1, 20, 45);
-  const [depthSlider, depthSliderLabel] = createSliderWithLabel('depth', 0, 15, 5, 1, 20, 80);
+  const [depthSlider, depthSliderLabel] = createSliderWithLabel('depth', 0, maxDepth, 5, 1, 20, 80);
   const loopCheckbox = p.createCheckbox('loop', false).position(20, 165);
   const freezeTimerInput = p.createInput(0.5, 'number').attribute('min', '0').attribute('step', '0.25').size(50).position(70, 165).hide();
   const branch0 = createBranchSettings(1, 45, 1, 20, 240);
@@ -112,13 +113,11 @@ export default function fractalTreeSketch(p, args) {
     }
 
     p.createCanvas(parentDiv.clientWidth, parentDiv.clientHeight);
-    maxDepth = depthSlider.value();
 
     //INFO: ALL input events that should result in a rerender need to set `settingsChanged` to `true` 
     depthSlider.input(() => {
       if (currentMaxDepth > depthSlider.value()) currentMaxDepth = depthSlider.value();
-      maxDepth = depthSlider.value();
-      settingsChanged = true
+      // settingsChanged = true
     });
     lengthSlider.input(() => settingsChanged =  true)
     loopCheckbox.input(() => {
@@ -126,41 +125,42 @@ export default function fractalTreeSketch(p, args) {
       else freezeTimerInput.hide()
         settingsChanged =  true
     })
-    const branchData = branches.map((b) => ({
-      angle: b.angleSlider.value() * (p.PI/180),
-      scale: b.scaleSlider.value(),
-    }));
-    console.log(populateTreeStack(lengthSlider.value(), branchData)) 
   };
 
   p.draw = () => {
+   if (settingsChanged) treeStack = populateTreeStack()
     if (freezeAnimation) return;
-    if (currentMaxDepth < maxDepth && p.frameCount % (p.getTargetFrameRate() / speedSlider.value()) === 0) currentMaxDepth++;
+    if (currentMaxDepth < depthSlider.value() && p.frameCount % (p.getTargetFrameRate() / speedSlider.value()) === 0) currentMaxDepth++;
 
     // Do not rerender if depth stayed the same
     if (!settingsChanged && currentMaxDepth === lastAnimationDepth) return;
     p.clear();
     p.translate(p.width / 2, p.height);
-    p.angleMode(p.DEGREES);
     p.strokeWeight(10);
-    // const branchData = branches.map((b) => ({
-    //   angle: b.angleSlider.value(),
-    //   scale: b.scaleSlider.value(),
-    // }));
-    const branchData = branches.map((b) => ({
-      angle: b.angleSlider.value() * (p.PI/180),
-      scale: b.scaleSlider.value(),
-    }));
-
-    const stack = populateTreeStack(lengthSlider.value(), branchData)
-    console.log(stack)
-    for(let i = 0; i < maxDepth; i++) {
-      for (const node of stack[i]) {
-        p.strokeWeight(p.map(i, 0, maxDepth, 5, 1))
+    p.fill(0)
+    console.time("drawing tree")
+    for(let i = 0; i < depthSlider.value(); i++) {
+        p.strokeWeight(p.map(i, 0, depthSlider.value(), 5, 1))
+        const nodes = treeStack[i]
+      console.log(nodes.length)
+        if (nodes.length > 10_000) {
+          const firstNode = nodes[0]
+          const lastNode = nodes[nodes.length - 1]
+          console.time("drawing Shape")
+          p.beginShape()
+          p.vertex(firstNode.x1, firstNode.y1)
+          p.vertex(firstNode.x2, firstNode.y2)
+          p.vertex(lastNode.x1, lastNode.y1)
+          p.vertex(lastNode.x2, lastNode.y2)
+          p.endShape(p.CLOSE)
+          console.timeEnd("drawing Shape")
+          continue
+        }
+      for (const node of treeStack[i]) {
         p.line(node.x1, node.y1, node.x2, node.y2)
       }
     }
-    // branch(lengthSlider.value(), 0, branchData);
+    console.timeEnd("drawing tree")
     lastAnimationDepth = currentMaxDepth;
     settingsChanged = false
     if (currentMaxDepth >= depthSlider.value()) {
@@ -182,18 +182,25 @@ export default function fractalTreeSketch(p, args) {
     p.resizeCanvas(parentDiv.clientWidth, parentDiv.clientHeight);
   };
 
-  function populateTreeStack(maxLength, branchData) {
+  function populateTreeStack() {
+    console.time("Calualting tree...")
+    const branchData = branches.map((b) => ({
+      angle: b.angleSlider.value() * (p.PI/180),
+      scale: b.scaleSlider.value(),
+    }));
+
+    const maxLength = lengthSlider.value()
+
     const stack = {}
     stack[0] = [{x1: 0, y1: 0, x2: 0, y2: -maxLength, angle: 0 - 90 * p.PI / 180, length: maxLength}]
+
     for (let i = 1; i < maxDepth + 1; i++) {
       stack[i] = []
-      if (stack[i-1].length > 50000) continue
-      // if (len < 1) continue
+      if (stack[i-1].length > 500000) continue
 
       for (const node of stack[i-1]) {
         for (const b of branchData) {
           const len = node.length * 0.67 * b.scale
-          if (len < 0.5) continue
           const x1 = node.x2
           const y1 = node.y2
           const angle = node.angle + b.angle 
@@ -203,6 +210,7 @@ export default function fractalTreeSketch(p, args) {
         }
       }
     }
+    console.timeEnd("Calualting tree...")
     return stack
   }
 
