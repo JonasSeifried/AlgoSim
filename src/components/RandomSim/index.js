@@ -1,5 +1,5 @@
 'use client';
-
+import { useState } from 'react'; 
 import dynamic from 'next/dynamic';
 
 const BoidsSim = dynamic(() => import('@/components/BoidsSim'), { ssr: false });
@@ -27,13 +27,29 @@ const sims = [
 
 
 
-const RandomSim = () => {
-  
-    const randomSim = sims[Math.floor(Math.random() * sims.length)]
+const RandomSim = ({ className }) => {
 
-    return <div className="absolute w-full h-full -z-10">
+  const getRandomSim = () => { return sims[Math.floor(Math.random() * sims.length)] }
+
+  const [randomSim, setRandomSim] = useState(getRandomSim());
+    const changeSim = () => {
+      setRandomSim(oldSim => {
+      let newSim;
+      do {
+        newSim = getRandomSim()
+      }
+        while(oldSim === newSim)
+      return newSim;
+    }
+      )
+    }
+
+    return <div className={className}>
+      <div className='relative w-full h-full'>
         {randomSim}
-        </div>
+        <button onClick={changeSim} className="absolute bottom-10 right-10 hover:scale-110">refresh</button>
+      </div>
+    </div>
 }
 
 export default RandomSim
