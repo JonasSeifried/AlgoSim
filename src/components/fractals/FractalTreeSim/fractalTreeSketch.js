@@ -105,7 +105,6 @@ export default function fractalTreeSketch(p, args) {
           branch.settingsDiv.hide();
         }
       }
-
       if (args.loop) loopCheckbox.checked(args.loop);
       if (args.speed) speedSlider.value(args.speed);
       if (args.length) lengthSlider.value(args.length);
@@ -114,8 +113,10 @@ export default function fractalTreeSketch(p, args) {
       if (args.opacity) opacity = args.opacity;
 
       for (let i = 0; i <= branches.length; i++) {
-        if (args[`branch${i}`] && args[`branch${i}`].angle) branches[i].angleSlider.value(args[`branch${i}`].angle);
-        if (args[`branch${i}`] && args[`branch${i}`].scale) branches[i].scaleSlider.value(args[`branch${i}`].scale);
+        if (args[`branch${i}`] && args[`branch${i}`].angle !== undefined)
+          branches[i].angleSlider.value(args[`branch${i}`].angle);
+        if (args[`branch${i}`] && args[`branch${i}`].scale !== undefined)
+          branches[i].scaleSlider.value(args[`branch${i}`].scale);
       }
     }
 
